@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
 import base64
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import google.genai as genai
 from services import audit_room, generate_renovation
 from scraper import scrape_realtor_ca_listing, get_property_images
@@ -16,6 +18,9 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Thread pool for running synchronous code in async context
+executor = ThreadPoolExecutor(max_workers=3)
 
 # Add CORS middleware to allow frontend origin
 app.add_middleware(
@@ -38,6 +43,10 @@ class TestRenovationRequest(BaseModel):
     image_url: str
     image_gen_prompt: str
     mask_prompt: str
+
+class GenerateRenovationRequest(BaseModel):
+    image_url: str
+    audit_data: dict  # Pass the full audit result from the listing analysis
 
 # Health check endpoint
 @app.get("/health")
@@ -168,11 +177,12 @@ async def test_renovation(request: TestRenovationRequest):
             "image_base64": None
         }
 
-# NEW: Analyze from Realtor.ca listing URL
+# NEW: Analyze from Realtor.ca listing URL (AUDIT ONLY - no image generation)
 @app.post("/analyze-from-listing")
 async def analyze_from_listing(request: ListingUrlRequest):
     """
-    Scrape a Realtor.ca listing and analyze all property images for accessibility.
+    Scrape a Realtor.ca listing and audit all property images for accessibility.
+    Does NOT generate renovation images - those are generated on-demand via /generate-renovation.
 
     Args:
         listing_url: Full URL to a Realtor.ca listing
@@ -180,15 +190,31 @@ async def analyze_from_listing(request: ListingUrlRequest):
 
     Returns:
         {
-            "property_info": {...},  # Address, price, etc.
+            "property_info": {...},  # Address, price, neighborhood, etc.
             "images_analyzed": int,
-            "results": [...]  # Array of analysis results
+            "results": [
+                {
+                    "image_number": 1,
+                    "original_url": "...",
+                    "audit": {
+                        "barrier": "...",
+                        "cost_estimate": "...",
+                        "compliance_notes": "...",
+                        ...
+                    }
+                }
+            ]
         }
     """
     try:
-        # Step 1: Scrape the listing
+        # Step 1: Scrape the listing (run in thread pool to avoid blocking async loop)
         print(f"Scraping listing: {request.listing_url}")
-        listing_data = scrape_realtor_ca_listing(request.listing_url)
+        loop = asyncio.get_event_loop()
+        listing_data = await loop.run_in_executor(
+            executor,
+            scrape_realtor_ca_listing,
+            request.listing_url
+        )
 
         if "error" in listing_data:
             return {
@@ -201,62 +227,53 @@ async def analyze_from_listing(request: ListingUrlRequest):
         image_urls = listing_data.get("property_photos", [])
 
         if not image_urls:
+            # Provide more detailed error message
+            basic_info = listing_data.get("basic_info", {})
+            address = basic_info.get("address", "Unknown")
+
+            error_msg = "No images found in listing. "
+            if address == "Unknown" or not address:
+                error_msg += "The page might be blocked by robot detection or the listing URL is invalid. Try a different listing or check if the scraper browser window opened successfully."
+            else:
+                error_msg += f"Found property at '{address}' but no photos were extracted. The listing might have no photos or the page structure changed."
+
             return {
-                "error": "No images found in listing",
-                "property_info": listing_data.get("basic_info", {}),
-                "results": []
+                "error": error_msg,
+                "property_info": basic_info,
+                "results": [],
+                "total_images_found": 0,
+                "images_analyzed": 0
             }
 
         # Limit number of images to analyze
         images_to_analyze = image_urls[:request.max_images]
         print(f"Analyzing {len(images_to_analyze)} images (out of {len(image_urls)} total)")
 
-        # Step 3: Analyze each image
+        # Step 3: Audit each image (NO generation yet)
         results = []
         for idx, image_url in enumerate(images_to_analyze, 1):
             try:
-                print(f"Analyzing image {idx}/{len(images_to_analyze)}...")
+                print(f"Auditing image {idx}/{len(images_to_analyze)}...")
 
-                # Run audit
+                # Run audit only
                 audit_data = audit_room(image_url)
-
-                # Generate renovation if prompts available
-                image_gen_prompt = audit_data.get("image_gen_prompt")
-                mask_prompt = audit_data.get("mask_prompt")
-
-                renovated_image_base64 = None
-                if image_gen_prompt and mask_prompt:
-                    try:
-                        renovated_image_bytes = generate_renovation(
-                            image_url,
-                            image_gen_prompt,
-                            mask_prompt
-                        )
-
-                        if renovated_image_bytes:
-                            base64_encoded = base64.b64encode(renovated_image_bytes).decode('utf-8')
-                            renovated_image_base64 = f"data:image/jpeg;base64,{base64_encoded}"
-                    except Exception as e:
-                        print(f"Image generation error for image {idx}: {str(e)}")
 
                 results.append({
                     "image_number": idx,
                     "original_url": image_url,
-                    "audit": audit_data,
-                    "renovated_image": renovated_image_base64
+                    "audit": audit_data
                 })
 
             except Exception as e:
-                print(f"Error analyzing image {idx}: {str(e)}")
+                print(f"Error auditing image {idx}: {str(e)}")
                 results.append({
                     "image_number": idx,
                     "original_url": image_url,
                     "error": str(e),
-                    "audit": None,
-                    "renovated_image": None
+                    "audit": None
                 })
 
-        # Step 4: Return comprehensive report
+        # Step 4: Return comprehensive report with property info
         return {
             "property_info": {
                 "address": listing_data.get("basic_info", {}).get("address", "Unknown"),
@@ -267,6 +284,7 @@ async def analyze_from_listing(request: ListingUrlRequest):
                 "mls_number": listing_data.get("basic_info", {}).get("mls_number", "Unknown"),
                 "neighborhood": listing_data.get("neighborhood", {}).get("name", "Unknown"),
                 "location": listing_data.get("neighborhood", {}).get("location_description", ""),
+                "amenities": listing_data.get("neighborhood", {}).get("amenities", []),
             },
             "total_images_found": len(image_urls),
             "images_analyzed": len(results),
@@ -278,5 +296,82 @@ async def analyze_from_listing(request: ListingUrlRequest):
             "error": f"Failed to analyze listing: {str(e)}",
             "property_info": None,
             "results": []
+        }
+
+# NEW: Generate renovation image on-demand when user clicks on a photo
+@app.post("/generate-renovation")
+async def generate_renovation_endpoint(request: GenerateRenovationRequest):
+    """
+    Generate renovation image for a specific photo when user clicks on it.
+    This is called on-demand to save API costs and improve UX.
+
+    Args:
+        image_url: URL of the original property image
+        audit_data: The audit result containing prompts for image generation
+
+    Returns:
+        {
+            "success": true,
+            "renovated_image": "data:image/jpeg;base64,...",
+            "original_url": "..."
+        }
+    """
+    try:
+        # Extract prompts from audit data
+        image_gen_prompt = request.audit_data.get("image_gen_prompt")
+        mask_prompt = request.audit_data.get("mask_prompt")
+
+        # Check for two-pass workflow
+        clear_mask = request.audit_data.get("clear_mask", "")
+        clear_prompt = request.audit_data.get("clear_prompt", "")
+        build_mask = request.audit_data.get("build_mask", "")
+        build_prompt = request.audit_data.get("build_prompt", "")
+
+        is_two_pass = bool(clear_mask and clear_prompt and build_mask and build_prompt)
+
+        if not image_gen_prompt or not mask_prompt:
+            return {
+                "success": False,
+                "error": "No renovation prompts found in audit data",
+                "renovated_image": None
+            }
+
+        print(f"Generating renovation for: {request.image_url}")
+
+        # Generate the renovation image
+        renovated_image_bytes = generate_renovation(
+            request.image_url,
+            image_gen_prompt,
+            mask_prompt,
+            is_two_pass=is_two_pass,
+            clear_mask=clear_mask if is_two_pass else None,
+            clear_prompt=clear_prompt if is_two_pass else None,
+            build_mask=build_mask if is_two_pass else None,
+            build_prompt=build_prompt if is_two_pass else None
+        )
+
+        if renovated_image_bytes:
+            # Encode to base64
+            base64_encoded = base64.b64encode(renovated_image_bytes).decode('utf-8')
+            renovated_image_base64 = f"data:image/jpeg;base64,{base64_encoded}"
+
+            return {
+                "success": True,
+                "renovated_image": renovated_image_base64,
+                "original_url": request.image_url
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Image generation returned no data",
+                "renovated_image": None
+            }
+
+    except Exception as e:
+        print(f"Error generating renovation: {str(e)}")
+        return {
+            "success": False,
+            "error": f"Generation failed: {str(e)}",
+            "renovated_image": None
         }
 

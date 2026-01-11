@@ -6,22 +6,52 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-interface AnalysisResult {
-  audit: {
-    barrier_detected: string;
-    renovation_suggestion: string;
-    estimated_cost_usd: number;
-    compliance_note: string;
-    accessibility_score: number;
-    [key: string]: unknown;
-  };
-  image_data: string | null;
+interface PropertyInfo {
+  address: string;
+  price: string;
+  bedrooms: string;
+  bathrooms: string;
+  square_feet: string;
+  mls_number: string;
+  neighborhood: string;
+  location: string;
+  amenities: string[];
+}
+
+interface AuditData {
+  barrier: string;
+  renovation_suggestion: string;
+  cost_estimate: string;
+  compliance_notes: string;
+  accessibility_score: number;
+  image_gen_prompt?: string;
+  mask_prompt?: string;
+  clear_mask?: string;
+  clear_prompt?: string;
+  build_mask?: string;
+  build_prompt?: string;
+  [key: string]: unknown;
+}
+
+interface ImageResult {
+  image_number: number;
+  original_url: string;
+  audit: AuditData;
+  error?: string;
+}
+
+interface ListingAnalysisResult {
+  property_info: PropertyInfo;
+  total_images_found: number;
+  images_analyzed: number;
+  results: ImageResult[];
 }
 
 export default function Hero() {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inputMode, setInputMode] = useState<'listing' | 'image'>('listing');
   const router = useRouter();
 
   const handleAnalyze = async (e: React.FormEvent) => {
@@ -32,27 +62,94 @@ export default function Hero() {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:8000/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ image_url: url }),
-      });
+      if (inputMode === 'image') {
+        // Single image analysis (original workflow)
+        const response = await fetch("http://localhost:8000/analyze", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ image_url: url }),
+        });
 
-      if (!response.ok) {
-        throw new Error(`Analysis failed: ${response.statusText}`);
-      }
+        if (!response.ok) {
+          throw new Error(`Analysis failed: ${response.statusText}`);
+        }
 
-      const result: AnalysisResult = await response.json();
+        const result = await response.json();
 
-      if (result.audit) {
-        // Store the result and original image URL in localStorage
-        localStorage.setItem("analysisResult", JSON.stringify(result));
-        localStorage.setItem("originalImageUrl", url);
-        router.push("/report");
+        if (result.audit) {
+          // Convert to listing format for consistency
+          const singleImageResult: ListingAnalysisResult = {
+            property_info: {
+              address: "Single Image Analysis",
+              price: "N/A",
+              bedrooms: "N/A",
+              bathrooms: "N/A",
+              square_feet: "N/A",
+              mls_number: "N/A",
+              neighborhood: "N/A",
+              location: "",
+              amenities: []
+            },
+            total_images_found: 1,
+            images_analyzed: 1,
+            results: [{
+              image_number: 1,
+              original_url: url,
+              audit: {
+                barrier: result.audit.barrier_detected || result.audit.barrier,
+                renovation_suggestion: result.audit.renovation_suggestion,
+                cost_estimate: `$${result.audit.estimated_cost_usd || 0}`,
+                compliance_notes: result.audit.compliance_note || result.audit.compliance_notes,
+                accessibility_score: result.audit.accessibility_score,
+                image_gen_prompt: result.audit.image_gen_prompt,
+                mask_prompt: result.audit.mask_prompt,
+                clear_mask: result.audit.clear_mask,
+                clear_prompt: result.audit.clear_prompt,
+                build_mask: result.audit.build_mask,
+                build_prompt: result.audit.build_prompt
+              }
+            }]
+          };
+
+          // Store in same format as listing analysis
+          localStorage.setItem("listingAnalysisResult", JSON.stringify(singleImageResult));
+          router.push("/report");
+        } else {
+          throw new Error("Analysis failed: No audit data returned");
+        }
       } else {
-        throw new Error("Analysis failed: No audit data returned");
+        // Listing URL analysis (new workflow)
+        const response = await fetch("http://localhost:8000/analyze-from-listing", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            listing_url: url,
+            max_images: 10
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Analysis failed: ${response.statusText}`);
+        }
+
+        const result: ListingAnalysisResult = await response.json();
+
+        if ('error' in result) {
+          throw new Error(result.error as string);
+        }
+
+        if (result.results && result.results.length > 0) {
+          localStorage.setItem("listingAnalysisResult", JSON.stringify(result));
+          router.push("/report");
+        } else if (result.total_images_found === 0) {
+          throw new Error("No images found in listing. Try using a direct image URL instead (switch to Image URL mode).");
+        } else {
+          throw new Error(`Analysis failed: Found ${result.total_images_found} images but none could be analyzed.`);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred during analysis");
@@ -99,6 +196,32 @@ export default function Hero() {
           Comprehensive AI cost evaluation and visualization of accessibility renovations for residential properties.
         </p>
 
+        {/* Mode Toggle */}
+        <div className="flex justify-center gap-2 mb-2">
+          <button
+            type="button"
+            onClick={() => setInputMode('listing')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              inputMode === 'listing'
+                ? 'bg-[#4A90E2] text-white'
+                : 'bg-white text-[#2C5F8D] border border-[#6BA3E8] hover:bg-[#E8F4FD]'
+            }`}
+          >
+            Listing URL
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode('image')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              inputMode === 'image'
+                ? 'bg-[#4A90E2] text-white'
+                : 'bg-white text-[#2C5F8D] border border-[#6BA3E8] hover:bg-[#E8F4FD]'
+            }`}
+          >
+            Image URL
+          </button>
+        </div>
+
         {/* Search Form */}
         <form onSubmit={handleAnalyze} className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
@@ -109,9 +232,17 @@ export default function Hero() {
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter property image URL..."
+              placeholder={
+                inputMode === 'listing'
+                  ? "Enter Realtor.ca listing URL..."
+                  : "Enter property image URL..."
+              }
               className="pl-12 border-[#6BA3E8] focus:border-[#4A90E2] focus:ring-[#4A90E2]"
-              aria-label="Enter a Zillow URL for accessibility analysis"
+              aria-label={
+                inputMode === 'listing'
+                  ? "Enter a Realtor.ca listing URL for accessibility analysis"
+                  : "Enter a property image URL for accessibility analysis"
+              }
               required
             />
           </div>
@@ -134,8 +265,27 @@ export default function Hero() {
 
         {/* Helper Text */}
         <p className="text-sm text-[#2C5F8D]">
-          Submit a property image URL to receive a detailed accessibility assessment
+          {inputMode === 'listing'
+            ? "Submit a Realtor.ca listing URL to analyze all property images for accessibility"
+            : "Submit a direct image URL from any property listing to analyze for accessibility"}
         </p>
+
+        {/* Tips based on mode */}
+        {inputMode === 'listing' && (
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-[#6BA3E8]">
+              ℹ️ A browser window will open when analyzing. If you see a robot check, complete it and the scraper will continue automatically.
+            </p>
+            <p className="text-xs text-[#6BA3E8]">
+              💡 Alternative: Switch to "Image URL" mode to bypass robot checks entirely.
+            </p>
+          </div>
+        )}
+        {inputMode === 'image' && (
+          <p className="text-xs text-[#6BA3E8] mt-2">
+            💡 Right-click any property photo on Realtor.ca and select "Copy Image Address"
+          </p>
+        )}
       </div>
     </section>
   );

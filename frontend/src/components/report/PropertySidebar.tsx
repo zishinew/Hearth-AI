@@ -2,16 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Link2 } from "lucide-react";
+import { Link2, Home, Bed, Bath, Maximize, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { PropertyAnalysis } from "../../../../lib/mock-data";
 
-interface PropertySidebarProps {
-  analysis: PropertyAnalysis;
+interface PropertyInfo {
+  address: string;
+  price: string;
+  bedrooms: string;
+  bathrooms: string;
+  square_feet: string;
+  mls_number: string;
+  neighborhood: string;
+  location: string;
+  amenities: string[];
 }
 
-export default function PropertySidebar({ analysis }: PropertySidebarProps) {
+interface PropertySidebarProps {
+  analysis: PropertyAnalysis;
+  propertyInfo?: PropertyInfo;
+}
+
+export default function PropertySidebar({ analysis, propertyInfo }: PropertySidebarProps) {
   const [newLink, setNewLink] = useState("");
   const [animatedScore, setAnimatedScore] = useState(0);
   const [showPotential, setShowPotential] = useState(false);
@@ -98,7 +111,7 @@ export default function PropertySidebar({ analysis }: PropertySidebarProps) {
             type="url"
             value={newLink}
             onChange={(e) => setNewLink(e.target.value)}
-            placeholder="Enter new property URL"
+            placeholder="Enter new listing URL"
             className="flex-1 text-base"
           />
           <Button type="submit" size="lg" className="bg-[#4A90E2] hover:bg-[#2C5F8D]">
@@ -106,6 +119,94 @@ export default function PropertySidebar({ analysis }: PropertySidebarProps) {
           </Button>
         </form>
       </div>
+
+      {/* Property Information */}
+      {propertyInfo && (
+        <div className="bg-white rounded-lg p-6 shadow-md border border-[#E8F4FD] space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Home className="h-5 w-5 text-[#4A90E2]" />
+            <h2 className="text-xl font-bold text-[#1E3A5F]">Property Details</h2>
+          </div>
+
+          <div className="space-y-3">
+            {propertyInfo.address && (
+              <div>
+                <div className="text-sm font-semibold text-[#2C5F8D] mb-1">Address</div>
+                <div className="text-base text-[#1E3A5F]">{propertyInfo.address}</div>
+              </div>
+            )}
+
+            {propertyInfo.price && (
+              <div>
+                <div className="text-sm font-semibold text-[#2C5F8D] mb-1">Price</div>
+                <div className="text-xl font-bold text-[#4A90E2]">{propertyInfo.price}</div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              {propertyInfo.bedrooms && (
+                <div className="flex items-center gap-2">
+                  <Bed className="h-4 w-4 text-[#6BA3E8]" />
+                  <div>
+                    <div className="text-xs text-[#2C5F8D]">Bedrooms</div>
+                    <div className="text-sm font-semibold text-[#1E3A5F]">{propertyInfo.bedrooms}</div>
+                  </div>
+                </div>
+              )}
+
+              {propertyInfo.bathrooms && (
+                <div className="flex items-center gap-2">
+                  <Bath className="h-4 w-4 text-[#6BA3E8]" />
+                  <div>
+                    <div className="text-xs text-[#2C5F8D]">Bathrooms</div>
+                    <div className="text-sm font-semibold text-[#1E3A5F]">{propertyInfo.bathrooms}</div>
+                  </div>
+                </div>
+              )}
+
+              {propertyInfo.square_feet && (
+                <div className="flex items-center gap-2 col-span-2">
+                  <Maximize className="h-4 w-4 text-[#6BA3E8]" />
+                  <div>
+                    <div className="text-xs text-[#2C5F8D]">Square Feet</div>
+                    <div className="text-sm font-semibold text-[#1E3A5F]">{propertyInfo.square_feet}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {propertyInfo.neighborhood && (
+              <div className="pt-2 border-t border-[#E8F4FD]">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="h-4 w-4 text-[#6BA3E8]" />
+                  <div className="text-sm font-semibold text-[#2C5F8D]">Neighborhood</div>
+                </div>
+                <div className="text-sm text-[#1E3A5F]">{propertyInfo.neighborhood}</div>
+                {propertyInfo.location && (
+                  <div className="text-xs text-[#6BA3E8] mt-1">{propertyInfo.location}</div>
+                )}
+              </div>
+            )}
+
+            {propertyInfo.amenities && propertyInfo.amenities.length > 0 && (
+              <div className="pt-2 border-t border-[#E8F4FD]">
+                <div className="text-sm font-semibold text-[#2C5F8D] mb-2">Nearby Amenities</div>
+                <ul className="space-y-1">
+                  {propertyInfo.amenities.slice(0, 5).map((amenity, idx) => (
+                    <li key={idx} className="text-xs text-[#1E3A5F]">• {amenity}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {propertyInfo.mls_number && (
+              <div className="pt-2 border-t border-[#E8F4FD]">
+                <div className="text-xs text-[#6BA3E8]">MLS® {propertyInfo.mls_number}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Accessibility Score - Circular Display */}
       <div className="bg-white rounded-lg p-6 shadow-md border border-[#E8F4FD]">

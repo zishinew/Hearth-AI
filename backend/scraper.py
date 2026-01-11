@@ -27,8 +27,10 @@ def scrape_realtor_ca_listing(listing_url: str) -> Dict:
     """
     with sync_playwright() as p:
         # Launch browser with anti-detection flags
+        # NOTE: headless=False is more reliable for bypassing bot detection
+        # Set headless=True only after confirming it works in your environment
         browser = p.chromium.launch(
-            headless=True,  # Run headless for production
+            headless=False,  # Non-headless to avoid bot detection
             args=[
                 '--disable-blink-features=AutomationControlled',
                 '--disable-dev-shm-usage',
@@ -49,10 +51,36 @@ def scrape_realtor_ca_listing(listing_url: str) -> Dict:
 
         try:
             # Navigate to the page
+            print("Opening browser and navigating to listing...")
             page.goto(listing_url, wait_until="domcontentloaded", timeout=30000)
 
-            # Wait and mimic human behavior
-            time.sleep(random.uniform(2, 4))
+            # Wait for initial page load
+            time.sleep(2)
+
+            # Check if robot verification is present
+            print("\n" + "="*70)
+            print("PLEASE COMPLETE HUMAN VERIFICATION IF PROMPTED")
+            print("="*70)
+            print("A browser window has opened. If you see a robot check or CAPTCHA:")
+            print("  1. Complete the verification in the browser window")
+            print("  2. Wait for the listing page to load")
+            print("  3. The scraper will automatically continue")
+            print("\nWaiting up to 60 seconds for page to be ready...")
+            print("="*70 + "\n")
+
+            # Wait for user to complete robot check (if present)
+            # We'll check for common Realtor.ca elements that indicate the page loaded
+            try:
+                # Wait for either the image gallery or property details to appear
+                # This gives user time to complete any CAPTCHA
+                page.wait_for_selector('img[src*="cdn.realtor.ca"], .propertyDetails, [class*="photo"], [class*="image"]',
+                                      timeout=60000)
+                print("✓ Page loaded successfully!\n")
+            except:
+                print("⚠ Timeout waiting for page elements. Continuing anyway...\n")
+
+            # Additional wait after page loads to ensure lazy images are ready
+            time.sleep(random.uniform(2, 3))
 
             # Scroll to load lazy images
             page.evaluate("""
