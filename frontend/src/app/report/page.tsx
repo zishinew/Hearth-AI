@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { MOCK_ANALYSIS, PropertyAnalysis } from "../../../../lib/mock-data";
 import PropertySidebar from "@/components/report/PropertySidebar";
 import TransformationViewer from "@/components/report/TransformationViewer";
@@ -40,6 +41,7 @@ interface ImageResult {
   original_url: string;
   audit: AuditData;
   error?: string;
+  renovated_image?: string; // Base64 data URI for renovated image
 }
 
 interface ListingAnalysisResult {
@@ -49,8 +51,24 @@ interface ListingAnalysisResult {
   results: ImageResult[];
 }
 
+interface JobStatus {
+  job_id: string;
+  status: "processing" | "completed" | "failed";
+  audit_progress: number;
+  generation_progress: number;
+  current_status: string;
+  total_images: number;
+  property_info?: PropertyInfo;
+  results: ImageResult[];
+  error?: string;
+}
+
 export default function ReportPage() {
+  const searchParams = useSearchParams();
+  const jobId = searchParams.get("job_id");
+  
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [analysis, setAnalysis] = useState<PropertyAnalysis>(MOCK_ANALYSIS);
   const [listingResult, setListingResult] = useState<ListingAnalysisResult | null>(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -60,7 +78,175 @@ export default function ReportPage() {
   const inFlightRequests = useRef<Map<number, AbortController>>(new Map());
   const router = useRouter();
 
+  // Job status tracking for Processing Hub
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+  const [jobError, setJobError] = useState<string | null>(null);
+  const [ellipsis, setEllipsis] = useState(".");
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<string>("");
+  const startTimeRef = useRef<number | null>(null);
+
+  // Animated ellipsis effect
   useEffect(() => {
+    if (!isProcessing) return;
+
+    const ellipsisInterval = setInterval(() => {
+      setEllipsis((prev) => {
+        if (prev === ".") return "..";
+        if (prev === "..") return "...";
+        return ".";
+      });
+    }, 500); // Change every 500ms
+
+    return () => clearInterval(ellipsisInterval);
+  }, [isProcessing]);
+
+  // Polling effect for job status
+  useEffect(() => {
+    if (!jobId) return;
+
+    setIsProcessing(true);
+    setIsLoading(false);
+    
+    // Record start time on first poll
+    if (startTimeRef.current === null) {
+      startTimeRef.current = Date.now();
+    }
+
+    const pollJobStatus = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/job-status/${jobId}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            setJobError("Job not found");
+            setIsProcessing(false);
+            return;
+          }
+          throw new Error(`Failed to fetch job status: ${response.statusText}`);
+        }
+
+        const status: JobStatus = await response.json();
+        setJobStatus(status);
+        
+        // Calculate estimated time remaining
+        if (startTimeRef.current !== null && status.status === "processing") {
+          const elapsed = (Date.now() - startTimeRef.current) / 1000; // seconds
+          // Use average of audit and generation progress
+          const avgProgress = (status.audit_progress + status.generation_progress) / 2;
+          
+          if (avgProgress > 0) {
+            const estimatedTotal = elapsed / (avgProgress / 100);
+            const remaining = Math.max(0, estimatedTotal - elapsed);
+            
+            // Format time remaining (minutes only, rounded up)
+            const minutes = Math.ceil(remaining / 60);
+            
+            if (minutes > 0) {
+              setEstimatedTimeRemaining(`~${minutes} min remaining`);
+            } else {
+              setEstimatedTimeRemaining("Less than 1 min remaining");
+            }
+          } else {
+            setEstimatedTimeRemaining("Calculating...");
+          }
+        }
+
+        // If completed, transition to normal report view
+        if (status.status === "completed") {
+          // Transform results to ListingAnalysisResult format
+          const propertyInfo = status.property_info || {
+            address: "Property Analysis",
+            price: "Unknown",
+            bedrooms: "Unknown",
+            bathrooms: "Unknown",
+            square_feet: "Unknown",
+            mls_number: "Unknown",
+            neighborhood: "Unknown",
+            location: "",
+            amenities: []
+          };
+
+          const listingResult: ListingAnalysisResult = {
+            property_info: propertyInfo,
+            total_images_found: status.total_images,
+            images_analyzed: status.results.length,
+            results: status.results.map((r, idx) => {
+              // Strip out renovated_image to avoid localStorage quota issues
+              // Base64 images can be very large (1-5MB+ each)
+              const { renovated_image, ...resultWithoutImage } = r;
+              return {
+                ...resultWithoutImage,
+                image_number: idx + 1,
+                audit: r.audit || {
+                  barrier: "",
+                  renovation_suggestion: "",
+                  cost_estimate: "",
+                  compliance_notes: "",
+                  accessibility_score: 0
+                }
+              };
+            })
+          };
+
+          // Store in localStorage (without renovated_image fields to avoid quota issues)
+          localStorage.setItem("listingAnalysisResult", JSON.stringify(listingResult));
+          
+          // Map renovated images to gallery indices and store them
+          // Create the same mapping logic as the normal report view uses
+          const allAnalyzedImages: Array<{ image: ImageResult; originalIndex: number }> = [];
+          status.results.forEach((r, originalIndex) => {
+            if (r.audit && !r.error) {
+              allAnalyzedImages.push({ image: r, originalIndex });
+            }
+          });
+
+          // Extract renovated images and map to gallery indices
+          const renovatedImagesMap: { [key: number]: string } = {};
+          allAnalyzedImages.forEach(({ image: r, originalIndex }, galleryIndex) => {
+            // Find the original result to get renovated_image
+            const originalResult = status.results[originalIndex];
+            if (originalResult?.renovated_image) {
+              renovatedImagesMap[galleryIndex] = originalResult.renovated_image;
+            }
+          });
+
+          // Store renovated images in localStorage (same key format as normal report view)
+          if (Object.keys(renovatedImagesMap).length > 0 && propertyInfo.address) {
+            try {
+              const persistedImagesKey = `renovatedImages_${propertyInfo.address}`;
+              localStorage.setItem(persistedImagesKey, JSON.stringify(renovatedImagesMap));
+            } catch (e) {
+              console.warn('Failed to persist renovated images to localStorage (quota may be exceeded):', e);
+              // Continue anyway - images can be regenerated from backend cache
+            }
+          }
+          
+          // Reload page to show normal report view
+          window.location.href = "/report";
+        }
+
+        // If failed, show error
+        if (status.status === "failed") {
+          setJobError(status.error || "Job failed");
+          setIsProcessing(false);
+        }
+      } catch (error) {
+        console.error("Error polling job status:", error);
+        setJobError(error instanceof Error ? error.message : "Failed to poll job status");
+        setIsProcessing(false);
+      }
+    };
+
+    // Poll immediately, then every 3 seconds
+    pollJobStatus();
+    const pollInterval = setInterval(pollJobStatus, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [jobId, router]);
+
+  // Normal report view loading (when no job_id)
+  useEffect(() => {
+    if (jobId) return; // Skip if processing a job
+
     // Read listing analysis result from localStorage
     const storedListingResult = localStorage.getItem("listingAnalysisResult");
 
@@ -115,7 +301,7 @@ export default function ReportPage() {
         }
 
         // Calculate total renovation cost from images with problems
-        const totalRenovationCost = imagesWithProblems.reduce((sum, imageResult) => {
+        const totalRenovationCost = imagesWithProblems.reduce((sum, { image: imageResult }) => {
           if (imageResult.audit && imageResult.audit.cost_estimate) {
             // Parse cost estimate (e.g., "$1,500 - $3,000" -> average)
             const match = imageResult.audit.cost_estimate.match(/\$?([\d,]+)/g);
@@ -130,7 +316,7 @@ export default function ReportPage() {
 
         // Calculate average accessibility score from images with problems
         const avgAccessibilityScore = imagesWithProblems.length > 0
-          ? imagesWithProblems.reduce((sum, imageResult) => {
+          ? imagesWithProblems.reduce((sum, { image: imageResult }) => {
               return sum + (imageResult.audit?.accessibility_score || 0);
             }, 0) / imagesWithProblems.length
           : 100;
@@ -168,7 +354,124 @@ export default function ReportPage() {
       // No stored result, redirect to home
       router.push("/");
     }
-  }, [router]);
+  }, [router, jobId]);
+
+  // Processing Hub view
+  if (isProcessing && jobStatus) {
+    return (
+      <div className="min-h-screen bg-[#FFF8E7] diagonal-dots-bg">
+        <div className="mx-auto max-w-7xl px-4 py-8">
+          <div className="flex flex-col gap-8">
+            {/* Header */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center"
+            >
+              <h1 className="text-4xl font-bold text-[#2C1810] mb-2">
+                Processing Your Property Analysis{ellipsis}
+              </h1>
+              <p className="text-lg text-[#5C4033] mb-1">{jobStatus.current_status}</p>
+              {estimatedTimeRemaining && (
+                <p className="text-base text-[#B8860B] font-medium">
+                  {estimatedTimeRemaining}
+                </p>
+              )}
+            </motion.div>
+
+            {/* Tutorial Video */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] flex justify-center"
+            >
+              <div className="w-full max-w-4xl">
+                <video
+                  className="w-full rounded-lg"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                >
+                  <source src="/tutorial-video.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </motion.div>
+
+            {/* Progress Bars */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] space-y-6"
+            >
+              {/* Audit Progress */}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-medium text-[#2C1810]">Audit Progress</span>
+                  <span className="text-sm text-[#5C4033]">{jobStatus.audit_progress}%</span>
+                </div>
+                <div className="w-full bg-[#F5E6D3] rounded-full h-3">
+                  <motion.div
+                    className="bg-[#D2691E] h-3 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${jobStatus.audit_progress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+              </div>
+
+              {/* Generation Progress */}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-medium text-[#2C1810]">Generation Progress</span>
+                  <span className="text-sm text-[#5C4033]">{jobStatus.generation_progress}%</span>
+                </div>
+                <div className="w-full bg-[#F5E6D3] rounded-full h-3">
+                  <motion.div
+                    className="bg-[#B8860B] h-3 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${jobStatus.generation_progress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Property Info (if available) */}
+            {jobStatus.property_info && (
+              <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3]">
+                <h2 className="text-xl font-bold text-[#2C1810] mb-2">
+                  {jobStatus.property_info.address}
+                </h2>
+                <p className="text-[#5C4033]">{jobStatus.property_info.price}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (jobError) {
+    return (
+      <div className="min-h-screen bg-[#FFF8E7] diagonal-dots-bg flex items-center justify-center">
+        <div className="bg-white rounded-lg p-8 shadow-md border border-[#F5E6D3] max-w-md text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Processing Error</h2>
+          <p className="text-[#5C4033] mb-6">{jobError}</p>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-[#D2691E] text-white px-6 py-2 rounded hover:bg-[#B8860B] transition"
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleImageClick = async (imageIndex: number) => {
     // If image already generated, just select it
@@ -314,16 +617,26 @@ export default function ReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF8E7]">
+    <div className="min-h-screen bg-[#FFF8E7] diagonal-dots-bg">
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* Left Sidebar - 1/3 width */}
-          <aside className="w-full lg:w-1/3">
+          <motion.aside 
+            className="w-full lg:w-1/3"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
             <PropertySidebar analysis={analysis} propertyInfo={listingResult?.property_info} />
-          </aside>
+          </motion.aside>
 
           {/* Right Main Area - 2/3 width */}
-          <main className="w-full lg:w-2/3 space-y-8">
+          <motion.main 
+            className="w-full lg:w-2/3 space-y-8"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, ease: "easeOut", delay: 0.1 }}
+          >
             <TransformationViewer
               analysis={analysis}
               selectedImageIndex={selectedImageIndex}
@@ -334,9 +647,10 @@ export default function ReportPage() {
                 (() => {
                   const originalIndex = imageIndexMap.get(selectedImageIndex);
                   if (originalIndex !== undefined && listingResult?.results[originalIndex]?.audit) {
-                    return listingResult.results[originalIndex].audit.barrier || 
-                           listingResult.results[originalIndex].audit.problem_description ||
-                           listingResult.results[originalIndex].audit.barrier_detected;
+                    const audit = listingResult.results[originalIndex].audit;
+                    return (audit.barrier as string) || 
+                           (audit.problem_description as string) ||
+                           (audit.barrier_detected as string);
                   }
                   return undefined;
                 })()
@@ -345,8 +659,9 @@ export default function ReportPage() {
                 (() => {
                   const originalIndex = imageIndexMap.get(selectedImageIndex);
                   if (originalIndex !== undefined && listingResult?.results[originalIndex]?.audit) {
-                    return listingResult.results[originalIndex].audit.renovation_suggestion ||
-                           listingResult.results[originalIndex].audit.solution_description;
+                    const audit = listingResult.results[originalIndex].audit;
+                    return (audit.renovation_suggestion as string) ||
+                           (audit.solution_description as string);
                   }
                   return undefined;
                 })()
@@ -359,7 +674,7 @@ export default function ReportPage() {
               generatingImages={generatingImages}
               renovatedImages={renovatedImages}
             />
-          </main>
+          </motion.main>
         </div>
       </div>
     </div>

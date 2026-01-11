@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/landing/Header";
 
-// Configure Inter font for professional typography
-const inter = Inter({
+// Configure Space Grotesk for headers and body text (Geist Sans alternative)
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-sans",
+  display: "swap",
+});
+
+// Use Space Grotesk as mono as well (Geist Mono alternative)
+// Can be updated later if a better mono font is needed
+const spaceGroteskMono = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -23,9 +31,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} antialiased bg-[#FFF8E7] text-slate-800`}
+        className={`${spaceGrotesk.variable} ${spaceGroteskMono.variable} antialiased bg-[#FFF8E7] text-slate-800`}
         style={{
-          fontFamily: "var(--font-inter), Inter, sans-serif",
+          fontFamily: "var(--font-sans), sans-serif",
         }}
       >
         <Header />

@@ -23,11 +23,27 @@ Return a strict JSON object with these keys:
 - image_gen_prompt: string (For backward compatibility: same as build_prompt if structural renovation, otherwise the prompt for the image generator)"""
 
 
+def get_audit_prompt(wheelchair_accessible: bool = False) -> str:
+    """
+    Returns the audit prompt for accessibility analysis.
+    
+    Args:
+        wheelchair_accessible: If True, focus on wheelchair-accessible modifications;
+                               If False, apply general accessibility improvements
+        
+    Returns:
+        The formatted audit prompt string
+    """
+    # For now, return the standard prompt
+    # In the future, this could be modified based on wheelchair_accessible flag
+    return AUDIT_PROMPT
+
+
 # ============================================================================
 # IMAGE GENERATION PROMPTS
 # ============================================================================
 
-def get_structural_renovation_prompt(clear_mask: str, clear_prompt: str, build_mask: str, build_prompt: str) -> str:
+def get_structural_renovation_prompt(clear_mask: str, clear_prompt: str, build_mask: str, build_prompt: str, wheelchair_accessible: bool = False) -> str:
     """
     Returns the reasoning prompt for structural renovations requiring removal.
     
@@ -36,6 +52,7 @@ def get_structural_renovation_prompt(clear_mask: str, clear_prompt: str, build_m
         clear_prompt: What should replace the removed object
         build_mask: Wider area description for construction
         build_prompt: Detailed prompt for new accessible features
+        wheelchair_accessible: If True, focus on wheelchair-accessible modifications
         
     Returns:
         The formatted reasoning prompt for structural renovations
@@ -69,13 +86,14 @@ Preserve all surrounding context exactly. Only modify the specified barrier regi
 Ensure safety features like railings are clearly visible and properly positioned."""
 
 
-def get_non_structural_renovation_prompt(mask_prompt: str, prompt: str) -> str:
+def get_non_structural_renovation_prompt(mask_prompt: str, prompt: str, wheelchair_accessible: bool = False) -> str:
     """
     Returns the reasoning prompt for non-structural renovations (direct modifications).
     
     Args:
         mask_prompt: Description of the area to modify
         prompt: The renovation prompt describing what to add/change
+        wheelchair_accessible: If True, focus on wheelchair-accessible modifications
         
     Returns:
         The formatted reasoning prompt for non-structural renovations

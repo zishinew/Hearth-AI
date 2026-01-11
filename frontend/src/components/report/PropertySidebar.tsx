@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Link2, Home, Bed, Bath, Maximize, MapPin } from "lucide-react";
+import { motion } from "framer-motion";
+import { Link2, Home, Bed, Bath, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { PropertyAnalysis } from "../../../../lib/mock-data";
@@ -28,14 +29,63 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
   const [newLink, setNewLink] = useState("");
   const [animatedScore, setAnimatedScore] = useState(0);
   const [showPotential, setShowPotential] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const totalCost = analysis.originalPrice + analysis.renovationCost;
 
-  const handleNewLinkSubmit = (e: React.FormEvent) => {
+  const handleNewLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newLink.trim()) {
-      // TODO: Navigate to analysis with new link
-      router.push("/?url=" + encodeURIComponent(newLink));
+    if (!newLink.trim()) return;
+
+    setIsLoading(true);
+    try {
+      // Get wheelchair accessible preference from localStorage
+      const wheelchairAccessible = JSON.parse(localStorage.getItem("wheelchairAccessible") || "false");
+
+      // Make API call to analyze the listing
+      const response = await fetch("http://localhost:8000/analyze-from-listing", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          listing_url: newLink.trim(),
+          max_images: 10,
+          wheelchair_accessible: wheelchairAccessible
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Analysis failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.job_id) {
+        // Navigate to report page with job_id for background processing
+        router.push(`/report?job_id=${result.job_id}`);
+        return;
+      }
+
+      if ('error' in result) {
+        throw new Error(result.error as string);
+      }
+
+      if (result.results && result.results.length > 0) {
+        // Store the result in localStorage
+        localStorage.setItem("listingAnalysisResult", JSON.stringify(result));
+        localStorage.setItem("wheelchairAccessible", JSON.stringify(wheelchairAccessible));
+        // Force a hard reload to ensure the page updates with new data
+        window.location.href = "/report";
+      } else if (result.total_images_found === 0) {
+        throw new Error("No images found in listing. Please try a different URL.");
+      } else {
+        throw new Error(`Analysis failed: Found ${result.total_images_found} images but none could be analyzed.`);
+      }
+    } catch (err) {
+      console.error("Failed to analyze listing:", err);
+      alert(err instanceof Error ? err.message : "An error occurred during analysis");
+      setIsLoading(false);
     }
   };
 
@@ -105,7 +155,12 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
   return (
     <div className="space-y-6">
       {/* Paste a new link */}
-      <div className="bg-white rounded-lg p-4 shadow-md border border-[#F5E6D3]">
+      <motion.div 
+        className="bg-white rounded-[1px] p-4 shadow-md border border-[#F5E6D3]"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
         <form onSubmit={handleNewLinkSubmit} className="flex gap-2">
           <Input
             type="url"
@@ -114,15 +169,24 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
             placeholder="Enter new listing URL"
             className="flex-1 text-base"
           />
-          <Button type="submit" size="lg" className="bg-[#D2691E] hover:bg-[#B8860B]">
-            <Link2 className="h-5 w-5" />
+          <Button type="submit" size="lg" className="bg-[#D2691E] hover:bg-[#B8860B]" disabled={isLoading}>
+            {isLoading ? (
+              <div className="animate-spin rounded-[1px] h-5 w-5 border-b-2 border-white"></div>
+            ) : (
+              <Link2 className="h-5 w-5" />
+            )}
           </Button>
         </form>
-      </div>
+      </motion.div>
 
       {/* Property Information */}
       {propertyInfo && (
-        <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] space-y-4">
+        <motion.div 
+          className="bg-white rounded-[1px] p-6 shadow-md border border-[#F5E6D3] space-y-4"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut", delay: 0.1 }}
+        >
           <div className="flex items-center gap-2 mb-4">
             <Home className="h-5 w-5 text-[#D2691E]" />
             <h2 className="text-xl font-bold text-[#5C4033]">Property Details</h2>
@@ -139,7 +203,15 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
             {propertyInfo.price && (
               <div>
                 <div className="text-sm font-semibold text-[#B8860B] mb-1">Price</div>
-                <div className="text-xl font-bold text-[#D2691E]">{propertyInfo.price}</div>
+                <div className="text-xl font-bold text-[#D2691E] font-mono">
+                  {(() => {
+                    // Extract numeric value and format with commas
+                    const numericValue = propertyInfo.price.replace(/[$,]/g, '');
+                    const num = parseFloat(numericValue);
+                    if (isNaN(num)) return propertyInfo.price; // Return original if not a valid number
+                    return num.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                  })()}
+                </div>
               </div>
             )}
 
@@ -175,19 +247,6 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
               )}
             </div>
 
-            {propertyInfo.neighborhood && (
-              <div className="pt-2 border-t border-[#F5E6D3]">
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="h-4 w-4 text-[#D4A574]" />
-                  <div className="text-sm font-semibold text-[#B8860B]">Neighborhood</div>
-                </div>
-                <div className="text-sm text-[#5C4033]">{propertyInfo.neighborhood}</div>
-                {propertyInfo.location && (
-                  <div className="text-xs text-[#D4A574] mt-1">{propertyInfo.location}</div>
-                )}
-              </div>
-            )}
-
             {propertyInfo.amenities && propertyInfo.amenities.length > 0 && (
               <div className="pt-2 border-t border-[#F5E6D3]">
                 <div className="text-sm font-semibold text-[#B8860B] mb-2">Nearby Amenities</div>
@@ -201,15 +260,20 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
 
             {propertyInfo.mls_number && (
               <div className="pt-2 border-t border-[#F5E6D3]">
-                <div className="text-xs text-[#D4A574]">MLS® {propertyInfo.mls_number}</div>
+                <div className="text-xs text-[#D4A574] font-mono">MLS® {propertyInfo.mls_number}</div>
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Accessibility Score - Circular Display */}
-      <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3]">
+      <motion.div 
+        className="bg-white rounded-[1px] p-6 shadow-md border border-[#F5E6D3]"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
+      >
         <h2 className="text-xl font-bold text-[#5C4033] mb-4 text-center">
           Accessibility Score
         </h2>
@@ -257,24 +321,29 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className="text-3xl font-bold text-[#5C4033] transition-all duration-1000 ease-out">
+                <div className="text-3xl font-bold text-[#5C4033] transition-all duration-1000 ease-out font-mono">
                   {Math.round(animatedScore)}%
                 </div>
                 {analysis.accessibilityScore.potential && potentialScore > currentScore && showPotential && (
                   <div className="text-sm font-semibold mt-1 animate-in fade-in duration-500">
-                    <span className="text-[#5C4033]">{currentScore}%</span>
+                    <span className="text-[#5C4033] font-mono">{currentScore}%</span>
                     <span className="text-[#D4A574] mx-1">→</span>
-                    <span className="text-[#D2691E]">{potentialScore}%</span>
+                    <span className="text-[#D2691E] font-mono">{potentialScore}%</span>
                   </div>
                 )}
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Cost Breakdown */}
-      <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] space-y-4">
+      <motion.div 
+        className="bg-white rounded-[1px] p-6 shadow-md border border-[#F5E6D3] space-y-4"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut", delay: 0.3 }}
+      >
         <h2 className="text-xl font-bold text-[#5C4033] mb-4">
           Cost Breakdown
         </h2>
@@ -284,7 +353,7 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
             <span className="text-base font-semibold text-[#B8860B]">
               Original Cost:
             </span>
-            <span className="text-xl font-bold text-[#5C4033]">
+            <span className="text-xl font-bold text-[#5C4033] font-mono">
               ${analysis.originalPrice.toLocaleString()}
             </span>
           </div>
@@ -293,7 +362,7 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
             <span className="text-base font-semibold text-[#B8860B]">
               Estimated Renovation:
             </span>
-            <span className="text-xl font-bold text-[#D2691E]">
+            <span className="text-xl font-bold text-[#D2691E] font-mono">
               +${analysis.renovationCost.toLocaleString()}
             </span>
           </div>
@@ -303,17 +372,22 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
               <span className="text-lg font-bold text-[#5C4033]">
                 Total Cost:
               </span>
-              <span className="text-2xl font-bold text-[#5C4033]">
+              <span className="text-2xl font-bold text-[#5C4033] font-mono">
                 ${totalCost.toLocaleString()}
               </span>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Additional Info */}
       {analysis.additionalInfo && (
-        <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] space-y-4">
+        <motion.div 
+          className="bg-white rounded-[1px] p-6 shadow-md border border-[#F5E6D3] space-y-4"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut", delay: 0.4 }}
+        >
           <h2 className="text-xl font-bold text-[#5C4033] mb-4">
             Additional Information
           </h2>
@@ -352,7 +426,7 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
               </ul>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

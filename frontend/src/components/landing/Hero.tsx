@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +65,7 @@ export default function Hero() {
 
     try {
       if (inputMode === 'image') {
-        // Single image analysis (original workflow)
+        // Single image analysis - now uses job-based workflow
         const response = await fetch("http://localhost:8000/analyze", {
           method: "POST",
           headers: {
@@ -82,50 +83,18 @@ export default function Hero() {
 
         const result = await response.json();
 
-        if (result.audit) {
-          // Convert to listing format for consistency
-          const singleImageResult: ListingAnalysisResult = {
-            property_info: {
-              address: "Single Image Analysis",
-              price: "N/A",
-              bedrooms: "N/A",
-              bathrooms: "N/A",
-              square_feet: "N/A",
-              mls_number: "N/A",
-              neighborhood: "N/A",
-              location: "",
-              amenities: []
-            },
-            total_images_found: 1,
-            images_analyzed: 1,
-            results: [{
-              image_number: 1,
-              original_url: url,
-              audit: {
-                barrier: result.audit.barrier_detected || result.audit.barrier,
-                renovation_suggestion: result.audit.renovation_suggestion,
-                cost_estimate: `$${result.audit.estimated_cost_usd || 0}`,
-                compliance_notes: result.audit.compliance_note || result.audit.compliance_notes,
-                accessibility_score: result.audit.accessibility_score,
-                image_gen_prompt: result.audit.image_gen_prompt,
-                mask_prompt: result.audit.mask_prompt,
-                clear_mask: result.audit.clear_mask,
-                clear_prompt: result.audit.clear_prompt,
-                build_mask: result.audit.build_mask,
-                build_prompt: result.audit.build_prompt
-              }
-            }]
-          };
-
-          // Store in same format as listing analysis
-          localStorage.setItem("listingAnalysisResult", JSON.stringify(singleImageResult));
+        if (result.job_id) {
+          // Store wheelchair accessible preference
           localStorage.setItem("wheelchairAccessible", JSON.stringify(wheelchairAccessible));
-          router.push("/report");
+          // Navigate to report page with job_id
+          router.push(`/report?job_id=${result.job_id}`);
+        } else if (result.error) {
+          throw new Error(result.error);
         } else {
-          throw new Error("Analysis failed: No audit data returned");
+          throw new Error("Analysis failed: No job_id returned");
         }
       } else {
-        // Listing URL analysis (new workflow)
+        // Listing URL analysis - now uses job-based workflow
         const response = await fetch("http://localhost:8000/analyze-from-listing", {
           method: "POST",
           headers: {
@@ -142,20 +111,17 @@ export default function Hero() {
           throw new Error(`Analysis failed: ${response.statusText}`);
         }
 
-        const result: ListingAnalysisResult = await response.json();
+        const result = await response.json();
 
-        if ('error' in result) {
-          throw new Error(result.error as string);
-        }
-
-        if (result.results && result.results.length > 0) {
-          localStorage.setItem("listingAnalysisResult", JSON.stringify(result));
+        if (result.job_id) {
+          // Store wheelchair accessible preference
           localStorage.setItem("wheelchairAccessible", JSON.stringify(wheelchairAccessible));
-          router.push("/report");
-        } else if (result.total_images_found === 0) {
-          throw new Error("No images found in listing. Try using a direct image URL instead (switch to Image URL mode).");
+          // Navigate to report page with job_id
+          router.push(`/report?job_id=${result.job_id}`);
+        } else if (result.error) {
+          throw new Error(result.error);
         } else {
-          throw new Error(`Analysis failed: Found ${result.total_images_found} images but none could be analyzed.`);
+          throw new Error("Analysis failed: No job_id returned");
         }
       }
     } catch (err) {
@@ -165,13 +131,13 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative flex min-h-[80vh] flex-col items-center justify-center px-4 py-48 text-center bg-[#FFF8E7] overflow-hidden">
+    <section className="relative flex min-h-[80vh] flex-col items-center justify-center px-4 py-32 text-center overflow-hidden">
       {/* Grainy white oval background */}
       <div 
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
       >
         <div 
-          className="rounded-full"
+          className="rounded-[1px]"
           style={{
             width: '1200px',
             height: '700px',
@@ -182,7 +148,7 @@ export default function Hero() {
         >
           {/* Grain texture overlay */}
           <div
-            className="absolute inset-0 rounded-full opacity-30"
+            className="absolute inset-0 rounded-[1px] opacity-30"
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
               backgroundSize: '150px 150px',
@@ -192,23 +158,43 @@ export default function Hero() {
         </div>
       </div>
       
-      <div className="relative z-10 mx-auto w-full max-w-3xl space-y-8">
+      <motion.div 
+        className="relative z-10 mx-auto w-full max-w-3xl space-y-8"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
         {/* Headline - Professional typography */}
-        <h1 className="text-5xl font-thin leading-tight tracking-tight text-[#5C4033] sm:text-6xl">
+        <motion.h1 
+          className="text-5xl font-thin leading-tight tracking-tight text-[#5C4033] sm:text-6xl"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut", delay: 0.1 }}
+        >
           Find & build a home that can grow with you.
-        </h1>
+        </motion.h1>
 
         {/* Subheadline - Professional description */}
-        <p className="mx-auto max-w-2xl text-xl leading-8 text-[#B8860B]">
+        <motion.p 
+          className="mx-auto max-w-2xl text-xl leading-8 text-[#B8860B]"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut", delay: 0.2 }}
+        >
           Comprehensive AI cost evaluation and visualization of accessibility renovations for residential properties.
-        </p>
+        </motion.p>
 
         {/* Mode Toggle */}
-        <div className="flex justify-center gap-2 mb-2">
+        <motion.div 
+          className="flex justify-center gap-2 mb-2"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut", delay: 0.3 }}
+        >
           <button
             type="button"
             onClick={() => setInputMode('listing')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-[1px] text-sm font-medium transition-colors ${
               inputMode === 'listing'
                 ? 'bg-[#D2691E] text-white'
                 : 'bg-white text-[#B8860B] border border-[#D4A574] hover:bg-[#F5E6D3]'
@@ -219,7 +205,7 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => setInputMode('image')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-[1px] text-sm font-medium transition-colors ${
               inputMode === 'image'
                 ? 'bg-[#D2691E] text-white'
                 : 'bg-white text-[#B8860B] border border-[#D4A574] hover:bg-[#F5E6D3]'
@@ -227,10 +213,16 @@ export default function Hero() {
           >
             Image URL
           </button>
-        </div>
+        </motion.div>
 
         {/* Search Form */}
-        <form onSubmit={handleAnalyze} className="flex flex-col gap-4">
+        <motion.form 
+          onSubmit={handleAnalyze} 
+          className="flex flex-col gap-4"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, ease: "easeOut", delay: 0.4 }}
+        >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
@@ -271,7 +263,7 @@ export default function Hero() {
               id="wheelchair-accessible"
               checked={wheelchairAccessible}
               onChange={(e) => setWheelchairAccessible(e.target.checked)}
-              className="w-4 h-4 text-[#D2691E] border-[#D4A574] rounded focus:ring-[#D2691E] focus:ring-2"
+              className="w-4 h-4 text-[#D2691E] border-[#D4A574] rounded-[1px] focus:ring-[#D2691E] focus:ring-2"
             />
             <label 
               htmlFor="wheelchair-accessible" 
@@ -280,21 +272,21 @@ export default function Hero() {
               Require wheelchair-accessible modifications
             </label>
           </div>
-        </form>
+        </motion.form>
 
         {/* Error Message */}
         {error && (
-          <p className="text-sm text-red-700 bg-red-50 px-4 py-2 rounded-lg border border-red-200">
+          <p className="text-sm text-red-700 bg-red-50 px-4 py-2 rounded-[1px] border border-red-200">
             {error}
           </p>
         )}
 
         {/* Helper Text */}
-        <p className="text-sm text-[#B8860B]">
-          {inputMode === 'listing'
-            ? "Submit a Realtor.ca listing URL to analyze all property images for accessibility"
-            : "Submit a direct image URL from any property listing to analyze for accessibility"}
-        </p>
+        {inputMode === 'image' && (
+          <p className="text-sm text-[#B8860B]">
+            Submit a direct image URL from any property listing to analyze for accessibility
+          </p>
+        )}
 
         {/* Tips based on mode */}
         {inputMode === 'listing' && (
@@ -312,7 +304,7 @@ export default function Hero() {
             💡 Right-click any property photo on Realtor.ca and select "Copy Image Address"
           </p>
         )}
-      </div>
+      </motion.div>
     </section>
   );
 }

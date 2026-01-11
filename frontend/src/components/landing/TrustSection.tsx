@@ -59,7 +59,7 @@ export default function TrustSection() {
           {successStories.map((story, index) => (
             <div
               key={index}
-              className="flex-shrink-0 w-80 rounded-lg overflow-hidden bg-white shadow-md border border-[#F5E6D3]"
+              className="flex-shrink-0 w-80 rounded-[1px] overflow-hidden bg-white shadow-md border border-[#F5E6D3]"
             >
               <div className="relative h-48 w-full">
                 <Image
@@ -82,7 +82,7 @@ export default function TrustSection() {
           {successStories.map((story, index) => (
             <div
               key={`duplicate-${index}`}
-              className="flex-shrink-0 w-80 rounded-lg overflow-hidden bg-white shadow-md border border-[#F5E6D3]"
+              className="flex-shrink-0 w-80 rounded-[1px] overflow-hidden bg-white shadow-md border border-[#F5E6D3]"
             >
               <div className="relative h-48 w-full">
                 <Image
