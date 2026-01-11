@@ -20,7 +20,19 @@ export default function LoadingSkeleton() {
           {/* Right Main Area Skeleton */}
           <main className="w-full lg:w-[70%] space-y-8">
             <div className="bg-white rounded-[1px] p-6 border border-[#F5E6D3]">
-              <div className="h-96 w-full bg-[#F5E6D3] rounded animate-pulse"></div>
+              <div className="h-96 w-full rounded overflow-hidden flex items-center justify-center bg-[#F5E6D3]">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                >
+                  <source src="/demo_vid.mov" type="video/quicktime" />
+                  <source src="/demo_vid.mov" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
               <div className="h-6 w-3/4 bg-[#F5E6D3] rounded animate-pulse mt-4"></div>
             </div>
             <div className="space-y-4">

@@ -429,15 +429,16 @@ export default function ReportPage() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] flex justify-center"
             >
-              <div className="w-full max-w-4xl">
+              <div className="w-full max-w-4xl h-[500px] flex items-center justify-center">
                 <video
-                  className="w-full rounded-lg"
+                  className="w-full h-full rounded-lg object-contain"
                   autoPlay
                   loop
                   muted
                   playsInline
                 >
-                  <source src="/tutorial-video.mp4" type="video/mp4" />
+                  <source src="/demo_vid.mov" type="video/quicktime" />
+                  <source src="/demo_vid.mov" type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
               </div>

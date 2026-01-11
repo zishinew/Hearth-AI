@@ -217,6 +217,21 @@ def _validate_audit_response(audit_data: Dict[str, Any]) -> Dict[str, Any]:
             f"Missing required fields in audit response: {', '.join(missing_fields)}"
         )
     
+    # Check if no barriers were detected - if so, ensure all renovation fields are empty
+    barrier_detected = audit_data.get("barrier_detected", "").lower()
+    if "no accessibility barriers" in barrier_detected or "no barriers" in barrier_detected or "already accessible" in barrier_detected:
+        # Room doesn't need changes - set all renovation fields to empty
+        audit_data["renovation_suggestion"] = ""
+        audit_data["build_mask"] = ""
+        audit_data["build_prompt"] = ""
+        audit_data["mask_prompt"] = ""
+        audit_data["image_gen_prompt"] = ""
+        audit_data["clear_mask"] = ""
+        audit_data["clear_prompt"] = ""
+        audit_data["cost_estimate"] = "$0"
+        audit_data["estimated_cost_usd"] = 0
+        print("[VALIDATION] No barriers detected - skipping renovation generation")
+    
     # Set defaults for optional two-pass fields if not present
     audit_data.setdefault("clear_mask", "")
     audit_data.setdefault("clear_prompt", "")
