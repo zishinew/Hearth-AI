@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} antialiased bg-[#F0F7FF] text-slate-800`}
+        className={`${inter.variable} antialiased bg-[#FFF8E7] text-slate-800`}
         style={{
           fontFamily: "var(--font-inter), Inter, sans-serif",
         }}

@@ -1,22 +1,36 @@
 "use client";
 
-import Image from "next/image";
 import type { PropertyAnalysis } from "../../../../lib/mock-data";
 
 interface GalleryProps {
   analysis: PropertyAnalysis;
   selectedIndex: number;
   onImageSelect: (index: number) => void;
+  generatingImages?: Set<number>;
+  renovatedImages?: { [key: number]: string };
 }
 
 export default function Gallery({ 
   analysis, 
   selectedIndex, 
-  onImageSelect 
+  onImageSelect,
+  generatingImages = new Set(),
+  renovatedImages = {}
 }: GalleryProps) {
+  if (!analysis.images || analysis.images.length === 0) {
+    return (
+      <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3]">
+        <h2 className="text-2xl font-bold text-[#5C4033] mb-4">
+          Image Gallery
+        </h2>
+        <p className="text-[#B8860B]">No images available</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-lg p-6 shadow-md border border-[#E8F4FD]">
-      <h2 className="text-2xl font-bold text-[#1E3A5F] mb-4">
+    <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3]">
+      <h2 className="text-2xl font-bold text-[#5C4033] mb-4">
         Image Gallery
       </h2>
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
@@ -26,18 +40,40 @@ export default function Gallery({
             onClick={() => onImageSelect(index)}
             className={`flex-shrink-0 rounded-lg overflow-hidden border-4 transition-all ${
               selectedIndex === index
-                ? "border-[#4A90E2] scale-105 shadow-lg"
-                : "border-transparent hover:border-[#6BA3E8]"
+                ? "border-[#D2691E] scale-105 shadow-lg"
+                : "border-transparent hover:border-[#D4A574]"
             }`}
           >
             <div className="relative w-32 h-24">
-              <Image
-                src={image.original}
-                alt={`${image.label} thumbnail`}
-                fill
-                className="object-cover"
-                sizes="128px"
-              />
+              {image.original ? (
+                <>
+                  <img
+                    src={image.original}
+                    alt={`${image.label} thumbnail`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error(`Failed to load image ${index}:`, image.original);
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                  {/* Loading overlay */}
+                  {generatingImages.has(index) && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                    </div>
+                  )}
+                  {/* Generated indicator */}
+                  {renovatedImages[index] && !generatingImages.has(index) && (
+                    <div className="absolute top-1 right-1 bg-[#D2691E] text-white text-xs px-1.5 py-0.5 rounded">
+                      ✓
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <span className="text-xs text-gray-500">No image</span>
+                </div>
+              )}
             </div>
           </button>
         ))}

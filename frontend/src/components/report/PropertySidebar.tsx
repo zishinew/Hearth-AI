@@ -105,7 +105,7 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
   return (
     <div className="space-y-6">
       {/* Paste a new link */}
-      <div className="bg-white rounded-lg p-4 shadow-md border border-[#E8F4FD]">
+      <div className="bg-white rounded-lg p-4 shadow-md border border-[#F5E6D3]">
         <form onSubmit={handleNewLinkSubmit} className="flex gap-2">
           <Input
             type="url"
@@ -114,7 +114,7 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
             placeholder="Enter new listing URL"
             className="flex-1 text-base"
           />
-          <Button type="submit" size="lg" className="bg-[#4A90E2] hover:bg-[#2C5F8D]">
+          <Button type="submit" size="lg" className="bg-[#D2691E] hover:bg-[#B8860B]">
             <Link2 className="h-5 w-5" />
           </Button>
         </form>
@@ -122,86 +122,86 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
 
       {/* Property Information */}
       {propertyInfo && (
-        <div className="bg-white rounded-lg p-6 shadow-md border border-[#E8F4FD] space-y-4">
+        <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] space-y-4">
           <div className="flex items-center gap-2 mb-4">
-            <Home className="h-5 w-5 text-[#4A90E2]" />
-            <h2 className="text-xl font-bold text-[#1E3A5F]">Property Details</h2>
+            <Home className="h-5 w-5 text-[#D2691E]" />
+            <h2 className="text-xl font-bold text-[#5C4033]">Property Details</h2>
           </div>
 
           <div className="space-y-3">
             {propertyInfo.address && (
               <div>
-                <div className="text-sm font-semibold text-[#2C5F8D] mb-1">Address</div>
-                <div className="text-base text-[#1E3A5F]">{propertyInfo.address}</div>
+                <div className="text-sm font-semibold text-[#B8860B] mb-1">Address</div>
+                <div className="text-base text-[#5C4033]">{propertyInfo.address}</div>
               </div>
             )}
 
             {propertyInfo.price && (
               <div>
-                <div className="text-sm font-semibold text-[#2C5F8D] mb-1">Price</div>
-                <div className="text-xl font-bold text-[#4A90E2]">{propertyInfo.price}</div>
+                <div className="text-sm font-semibold text-[#B8860B] mb-1">Price</div>
+                <div className="text-xl font-bold text-[#D2691E]">{propertyInfo.price}</div>
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-4 pt-2">
               {propertyInfo.bedrooms && (
                 <div className="flex items-center gap-2">
-                  <Bed className="h-4 w-4 text-[#6BA3E8]" />
+                  <Bed className="h-4 w-4 text-[#D4A574]" />
                   <div>
-                    <div className="text-xs text-[#2C5F8D]">Bedrooms</div>
-                    <div className="text-sm font-semibold text-[#1E3A5F]">{propertyInfo.bedrooms}</div>
+                    <div className="text-xs text-[#B8860B]">Bedrooms</div>
+                    <div className="text-sm font-semibold text-[#5C4033]">{propertyInfo.bedrooms}</div>
                   </div>
                 </div>
               )}
 
               {propertyInfo.bathrooms && (
                 <div className="flex items-center gap-2">
-                  <Bath className="h-4 w-4 text-[#6BA3E8]" />
+                  <Bath className="h-4 w-4 text-[#D4A574]" />
                   <div>
-                    <div className="text-xs text-[#2C5F8D]">Bathrooms</div>
-                    <div className="text-sm font-semibold text-[#1E3A5F]">{propertyInfo.bathrooms}</div>
+                    <div className="text-xs text-[#B8860B]">Bathrooms</div>
+                    <div className="text-sm font-semibold text-[#5C4033]">{propertyInfo.bathrooms}</div>
                   </div>
                 </div>
               )}
 
               {propertyInfo.square_feet && (
                 <div className="flex items-center gap-2 col-span-2">
-                  <Maximize className="h-4 w-4 text-[#6BA3E8]" />
+                  <Maximize className="h-4 w-4 text-[#D4A574]" />
                   <div>
-                    <div className="text-xs text-[#2C5F8D]">Square Feet</div>
-                    <div className="text-sm font-semibold text-[#1E3A5F]">{propertyInfo.square_feet}</div>
+                    <div className="text-xs text-[#B8860B]">Square Feet</div>
+                    <div className="text-sm font-semibold text-[#5C4033]">{propertyInfo.square_feet}</div>
                   </div>
                 </div>
               )}
             </div>
 
             {propertyInfo.neighborhood && (
-              <div className="pt-2 border-t border-[#E8F4FD]">
+              <div className="pt-2 border-t border-[#F5E6D3]">
                 <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="h-4 w-4 text-[#6BA3E8]" />
-                  <div className="text-sm font-semibold text-[#2C5F8D]">Neighborhood</div>
+                  <MapPin className="h-4 w-4 text-[#D4A574]" />
+                  <div className="text-sm font-semibold text-[#B8860B]">Neighborhood</div>
                 </div>
-                <div className="text-sm text-[#1E3A5F]">{propertyInfo.neighborhood}</div>
+                <div className="text-sm text-[#5C4033]">{propertyInfo.neighborhood}</div>
                 {propertyInfo.location && (
-                  <div className="text-xs text-[#6BA3E8] mt-1">{propertyInfo.location}</div>
+                  <div className="text-xs text-[#D4A574] mt-1">{propertyInfo.location}</div>
                 )}
               </div>
             )}
 
             {propertyInfo.amenities && propertyInfo.amenities.length > 0 && (
-              <div className="pt-2 border-t border-[#E8F4FD]">
-                <div className="text-sm font-semibold text-[#2C5F8D] mb-2">Nearby Amenities</div>
+              <div className="pt-2 border-t border-[#F5E6D3]">
+                <div className="text-sm font-semibold text-[#B8860B] mb-2">Nearby Amenities</div>
                 <ul className="space-y-1">
                   {propertyInfo.amenities.slice(0, 5).map((amenity, idx) => (
-                    <li key={idx} className="text-xs text-[#1E3A5F]">• {amenity}</li>
+                    <li key={idx} className="text-xs text-[#5C4033]">• {amenity}</li>
                   ))}
                 </ul>
               </div>
             )}
 
             {propertyInfo.mls_number && (
-              <div className="pt-2 border-t border-[#E8F4FD]">
-                <div className="text-xs text-[#6BA3E8]">MLS® {propertyInfo.mls_number}</div>
+              <div className="pt-2 border-t border-[#F5E6D3]">
+                <div className="text-xs text-[#D4A574]">MLS® {propertyInfo.mls_number}</div>
               </div>
             )}
           </div>
@@ -209,8 +209,8 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
       )}
 
       {/* Accessibility Score - Circular Display */}
-      <div className="bg-white rounded-lg p-6 shadow-md border border-[#E8F4FD]">
-        <h2 className="text-xl font-bold text-[#1E3A5F] mb-4 text-center">
+      <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3]">
+        <h2 className="text-xl font-bold text-[#5C4033] mb-4 text-center">
           Accessibility Score
         </h2>
         <div className="flex justify-center mb-4">
@@ -222,7 +222,7 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
                 cx={circleCenter}
                 cy={circleCenter}
                 r={radius}
-                stroke="#E8F4FD"
+                stroke="#F5E6D3"
                 strokeWidth="10"
                 fill="none"
               />
@@ -231,7 +231,7 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
                 cx={circleCenter}
                 cy={circleCenter}
                 r={radius}
-                stroke="#6BA3E8"
+                stroke="#D4A574"
                 strokeWidth="10"
                 fill="none"
                 strokeDasharray={scoreCircumference}
@@ -245,7 +245,7 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
                   cx={circleCenter}
                   cy={circleCenter}
                   r={radius}
-                  stroke="#4A90E2"
+                  stroke="#D2691E"
                   strokeWidth="10"
                   fill="none"
                   strokeDasharray={scoreCircumference}
@@ -257,14 +257,14 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className="text-3xl font-bold text-[#1E3A5F] transition-all duration-1000 ease-out">
+                <div className="text-3xl font-bold text-[#5C4033] transition-all duration-1000 ease-out">
                   {Math.round(animatedScore)}%
                 </div>
                 {analysis.accessibilityScore.potential && potentialScore > currentScore && showPotential && (
                   <div className="text-sm font-semibold mt-1 animate-in fade-in duration-500">
-                    <span className="text-[#1E3A5F]">{currentScore}%</span>
-                    <span className="text-[#6BA3E8] mx-1">→</span>
-                    <span className="text-[#4A90E2]">{potentialScore}%</span>
+                    <span className="text-[#5C4033]">{currentScore}%</span>
+                    <span className="text-[#D4A574] mx-1">→</span>
+                    <span className="text-[#D2691E]">{potentialScore}%</span>
                   </div>
                 )}
               </div>
@@ -274,36 +274,36 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
       </div>
 
       {/* Cost Breakdown */}
-      <div className="bg-white rounded-lg p-6 shadow-md border border-[#E8F4FD] space-y-4">
-        <h2 className="text-xl font-bold text-[#1E3A5F] mb-4">
+      <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] space-y-4">
+        <h2 className="text-xl font-bold text-[#5C4033] mb-4">
           Cost Breakdown
         </h2>
         
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <span className="text-base font-semibold text-[#2C5F8D]">
+            <span className="text-base font-semibold text-[#B8860B]">
               Original Cost:
             </span>
-            <span className="text-xl font-bold text-[#1E3A5F]">
+            <span className="text-xl font-bold text-[#5C4033]">
               ${analysis.originalPrice.toLocaleString()}
             </span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-base font-semibold text-[#2C5F8D]">
+            <span className="text-base font-semibold text-[#B8860B]">
               Estimated Renovation:
             </span>
-            <span className="text-xl font-bold text-[#4A90E2]">
+            <span className="text-xl font-bold text-[#D2691E]">
               +${analysis.renovationCost.toLocaleString()}
             </span>
           </div>
 
-          <div className="border-t border-[#6BA3E8] pt-3 mt-3">
+          <div className="border-t border-[#D4A574] pt-3 mt-3">
             <div className="flex justify-between items-center">
-              <span className="text-lg font-bold text-[#1E3A5F]">
+              <span className="text-lg font-bold text-[#5C4033]">
                 Total Cost:
               </span>
-              <span className="text-2xl font-bold text-[#1E3A5F]">
+              <span className="text-2xl font-bold text-[#5C4033]">
                 ${totalCost.toLocaleString()}
               </span>
             </div>
@@ -313,37 +313,37 @@ export default function PropertySidebar({ analysis, propertyInfo }: PropertySide
 
       {/* Additional Info */}
       {analysis.additionalInfo && (
-        <div className="bg-white rounded-lg p-6 shadow-md border border-[#E8F4FD] space-y-4">
-          <h2 className="text-xl font-bold text-[#1E3A5F] mb-4">
+        <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] space-y-4">
+          <h2 className="text-xl font-bold text-[#5C4033] mb-4">
             Additional Information
           </h2>
           
           <div className="space-y-3 text-base">
             <div className="flex justify-between">
-              <span className="font-semibold text-[#2C5F8D]">Noise level:</span>
-              <span className="text-[#1E3A5F]">{analysis.additionalInfo.noiseLevel}</span>
+              <span className="font-semibold text-[#B8860B]">Noise level:</span>
+              <span className="text-[#5C4033]">{analysis.additionalInfo.noiseLevel}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-semibold text-[#2C5F8D]">Average age:</span>
-              <span className="text-[#1E3A5F]">{analysis.additionalInfo.averageAge}</span>
+              <span className="font-semibold text-[#B8860B]">Average age:</span>
+              <span className="text-[#5C4033]">{analysis.additionalInfo.averageAge}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-semibold text-[#2C5F8D]">Air quality:</span>
-              <span className="text-[#1E3A5F]">{analysis.additionalInfo.airQuality}</span>
+              <span className="font-semibold text-[#B8860B]">Air quality:</span>
+              <span className="text-[#5C4033]">{analysis.additionalInfo.airQuality}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-semibold text-[#2C5F8D]">Elevation:</span>
-              <span className="text-[#1E3A5F]">{analysis.additionalInfo.elevation}</span>
+              <span className="font-semibold text-[#B8860B]">Elevation:</span>
+              <span className="text-[#5C4033]">{analysis.additionalInfo.elevation}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-semibold text-[#2C5F8D]">Safety Index:</span>
-              <span className="text-[#1E3A5F]">{analysis.additionalInfo.safetyIndex}</span>
+              <span className="font-semibold text-[#B8860B]">Safety Index:</span>
+              <span className="text-[#5C4033]">{analysis.additionalInfo.safetyIndex}</span>
             </div>
-            <div className="pt-3 border-t border-[#6BA3E8]">
-              <span className="font-semibold text-[#2C5F8D] block mb-2">
+            <div className="pt-3 border-t border-[#D4A574]">
+              <span className="font-semibold text-[#B8860B] block mb-2">
                 Local amenities:
               </span>
-              <ul className="space-y-1 text-[#1E3A5F]">
+              <ul className="space-y-1 text-[#5C4033]">
                 {analysis.additionalInfo.localAmenities.map((amenity, index) => (
                   <li key={index} className="text-sm">
                     • {amenity}

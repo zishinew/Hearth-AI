@@ -9,6 +9,7 @@ interface TransformationViewerProps {
   selectedImageIndex?: number;
   originalImageUrl?: string;
   renovatedImageData?: string | null;
+  isGenerating?: boolean;
 }
 
 export default function TransformationViewer({
@@ -16,6 +17,7 @@ export default function TransformationViewer({
   selectedImageIndex = 0,
   originalImageUrl,
   renovatedImageData,
+  isGenerating = false,
 }: TransformationViewerProps) {
   const [sliderPosition, setSliderPosition] = useState(50);
   
@@ -26,66 +28,112 @@ export default function TransformationViewer({
     renovated: "",
   };
 
-  const beforeImage = originalImageUrl || mainImage.original;
-  const afterImage = renovatedImageData || mainImage.renovated;
+  // Normalize empty strings to null to avoid React warnings
+  const beforeImage = (originalImageUrl || mainImage.original) || null;
+  const afterImage = (renovatedImageData || mainImage.renovated) || null;
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-md border border-[#E8F4FD] space-y-6">
+    <div className="bg-white rounded-lg p-6 shadow-md border border-[#F5E6D3] space-y-6">
       {/* Title - Professional, Centered */}
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-[#1E3A5F] sm:text-3xl">
+        <h1 className="text-2xl font-bold text-[#5C4033] sm:text-3xl">
           {analysis.address}
         </h1>
       </div>
 
       {/* Before & After Comparison Slider */}
-      <div className="relative w-full h-[400px] rounded-lg overflow-hidden border-4 border-[#6BA3E8]">
-        <ReactCompareSlider
-          itemOne={
-            <div className="relative w-full h-full">
-              {sliderPosition > 0 && (
-                <div className="absolute top-4 left-4 z-20 bg-white/95 px-4 py-2 rounded-lg shadow-md border border-[#6BA3E8]">
-                  <span className="text-xl font-bold text-[#1E3A5F]">
-                    BEFORE
-                  </span>
+      <div className="relative w-full h-[400px] rounded-lg overflow-hidden border-4 border-[#D4A574]">
+        {beforeImage ? (
+          afterImage ? (
+            // Both images available - show slider
+            <ReactCompareSlider
+              itemOne={
+                <div className="relative w-full h-full">
+                  {sliderPosition > 0 && (
+                    <div className="absolute top-4 left-4 z-20 bg-white/95 px-4 py-2 rounded-lg shadow-md border border-[#D4A574]">
+                      <span className="text-xl font-bold text-[#5C4033]">
+                        BEFORE
+                      </span>
+                    </div>
+                  )}
+                  <ReactCompareSliderImage
+                    src={beforeImage}
+                    alt="Before renovation"
+                    style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                  />
                 </div>
-              )}
-              <ReactCompareSliderImage
+              }
+              itemTwo={
+                <div className="relative w-full h-full">
+                  {sliderPosition < 100 && (
+                    <div className="absolute top-4 right-4 z-20 bg-white/95 px-4 py-2 rounded-lg shadow-md border border-[#D4A574]">
+                      <span className="text-xl font-bold text-[#5C4033]">
+                        AFTER
+                      </span>
+                    </div>
+                  )}
+                  <ReactCompareSliderImage
+                    src={afterImage}
+                    alt="After renovation"
+                    style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                  />
+                </div>
+              }
+              position={sliderPosition}
+              onPositionChange={setSliderPosition}
+              style={{ height: "100%" }}
+            />
+          ) : (
+            // Only original image available - show it with loading message
+            <div className="relative w-full h-full">
+              <img
                 src={beforeImage}
-                alt="Before renovation"
-                style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                alt="Property image"
+                className="w-full h-full object-cover"
               />
-            </div>
-          }
-          itemTwo={
-            <div className="relative w-full h-full">
-              {sliderPosition < 100 && (
-                <div className="absolute top-4 right-4 z-20 bg-white/95 px-4 py-2 rounded-lg shadow-md border border-[#6BA3E8]">
-                  <span className="text-xl font-bold text-[#1E3A5F]">
-                    AFTER
+              {isGenerating && (
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                  <div className="bg-white/95 px-6 py-4 rounded-lg shadow-lg border border-[#D4A574]">
+                    <p className="text-[#5C4033] text-lg font-semibold mb-1">
+                      Generating renovation preview...
+                    </p>
+                    <p className="text-[#B8860B] text-sm">
+                      Please wait while we create your transformation
+                    </p>
+                  </div>
+                </div>
+              )}
+              {!isGenerating && (
+                <div className="absolute bottom-4 left-4 bg-white/95 px-4 py-2 rounded-lg shadow-md border border-[#D4A574]">
+                  <span className="text-sm font-semibold text-[#5C4033]">
+                    Click image to generate renovation preview
                   </span>
                 </div>
               )}
-              <ReactCompareSliderImage
-                src={afterImage}
-                alt="After renovation"
-                style={{ objectFit: "cover", width: "100%", height: "100%" }}
-              />
             </div>
-          }
-          position={sliderPosition}
-          onPositionChange={setSliderPosition}
-          style={{ height: "100%" }}
-        />
+          )
+        ) : (
+          // No image available - show loading state
+          <div className="flex items-center justify-center w-full h-full bg-gray-100">
+            <div className="text-center">
+              <p className="text-[#5C4033] text-lg font-semibold mb-2">
+                Loading image...
+              </p>
+              <p className="text-[#B8860B] text-sm">
+                Please wait
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Problem Section */}
       {analysis.features[0] && (
-        <div className="bg-white rounded-sm p-6 border border-[#6BA3E8] shadow-sm">
-          <h3 className="text-l font-bold text-[#1E3A5F] mb-2">
+        <div className="bg-white rounded-sm p-6 border border-[#D4A574] shadow-sm">
+          <h3 className="text-l font-bold text-[#5C4033] mb-2">
             Problem
           </h3>
-          <p className="text-[#2C5F8D] text-base leading-relaxed">
+          <p className="text-[#B8860B] text-base leading-relaxed">
             {analysis.features[0].name}
           </p>
         </div>
@@ -93,11 +141,11 @@ export default function TransformationViewer({
 
       {/* Solution Section */}
       {analysis.features[0] && (
-        <div className="bg-[#E8F4FD] rounded-sm p-6 border border-[#6BA3E8]">
-          <h3 className="text-l font-bold text-[#1E3A5F] mb-2">
+        <div className="bg-[#F5E6D3] rounded-sm p-6 border border-[#D4A574]">
+          <h3 className="text-l font-bold text-[#5C4033] mb-2">
             Solution
           </h3>
-          <p className="text-[#2C5F8D] text-base leading-relaxed">
+          <p className="text-[#B8860B] text-base leading-relaxed">
             {analysis.features[0].description}
           </p>
         </div>

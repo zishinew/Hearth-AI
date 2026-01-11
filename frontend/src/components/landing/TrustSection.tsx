@@ -46,9 +46,9 @@ export default function TrustSection() {
   }, []);
 
   return (
-    <section className="py-16 px-4 bg-[#F0F7FF]">
+    <section className="py-16 px-4 bg-[#FFF8E7]">
       <div className="mx-auto max-w-6xl">
-        <h2 className="text-3xl font-bold text-center text-[#1E3A5F] mb-8 sm:text-4xl">
+        <h2 className="text-3xl font-bold text-center text-[#5C4033] mb-8 sm:text-4xl">
           Case Studies
         </h2>
         <div
@@ -59,7 +59,7 @@ export default function TrustSection() {
           {successStories.map((story, index) => (
             <div
               key={index}
-              className="flex-shrink-0 w-80 rounded-lg overflow-hidden bg-white shadow-md border border-[#E8F4FD]"
+              className="flex-shrink-0 w-80 rounded-lg overflow-hidden bg-white shadow-md border border-[#F5E6D3]"
             >
               <div className="relative h-48 w-full">
                 <Image
@@ -71,10 +71,10 @@ export default function TrustSection() {
                 />
               </div>
               <div className="p-4">
-                <h3 className="text-xl font-semibold text-[#1E3A5F] mb-1">
+                <h3 className="text-xl font-semibold text-[#5C4033] mb-1">
                   {story.title}
                 </h3>
-                <p className="text-base text-[#2C5F8D]">{story.description}</p>
+                <p className="text-base text-[#B8860B]">{story.description}</p>
               </div>
             </div>
           ))}
@@ -82,7 +82,7 @@ export default function TrustSection() {
           {successStories.map((story, index) => (
             <div
               key={`duplicate-${index}`}
-              className="flex-shrink-0 w-80 rounded-lg overflow-hidden bg-white shadow-md border border-[#E8F4FD]"
+              className="flex-shrink-0 w-80 rounded-lg overflow-hidden bg-white shadow-md border border-[#F5E6D3]"
             >
               <div className="relative h-48 w-full">
                 <Image
@@ -94,10 +94,10 @@ export default function TrustSection() {
                 />
               </div>
               <div className="p-4">
-                <h3 className="text-xl font-semibold text-[#1E3A5F] mb-1">
+                <h3 className="text-xl font-semibold text-[#5C4033] mb-1">
                   {story.title}
                 </h3>
-                <p className="text-base text-[#2C5F8D]">{story.description}</p>
+                <p className="text-base text-[#B8860B]">{story.description}</p>
               </div>
             </div>
           ))}

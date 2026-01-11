@@ -158,7 +158,7 @@ export default function Hero() {
   };
 
   return (
-    <section className="relative flex min-h-[80vh] flex-col items-center justify-center px-4 py-48 text-center bg-[#F0F7FF] overflow-hidden">
+    <section className="relative flex min-h-[80vh] flex-col items-center justify-center px-4 py-48 text-center bg-[#FFF8E7] overflow-hidden">
       {/* Grainy white oval background */}
       <div 
         className="absolute inset-0 flex items-center justify-center pointer-events-none"
@@ -168,7 +168,7 @@ export default function Hero() {
           style={{
             width: '1200px',
             height: '700px',
-            background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.4) 0%, rgba(41, 57, 149, 0.2) 30%, rgba(53, 6, 110, 0.1) 50%, transparent 75%)',
+            background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.4) 0%, rgba(210, 105, 30, 0.2) 30%, rgba(184, 134, 11, 0.1) 50%, transparent 75%)',
             filter: 'blur(100px)',
             position: 'relative',
           }}
@@ -187,12 +187,12 @@ export default function Hero() {
       
       <div className="relative z-10 mx-auto w-full max-w-3xl space-y-8">
         {/* Headline - Professional typography */}
-        <h1 className="text-5xl font-thin leading-tight tracking-tight text-[#1E3A5F] sm:text-6xl">
+        <h1 className="text-5xl font-thin leading-tight tracking-tight text-[#5C4033] sm:text-6xl">
           Find & build a home that can grow with you.
         </h1>
 
         {/* Subheadline - Professional description */}
-        <p className="mx-auto max-w-2xl text-xl leading-8 text-[#2C5F8D]">
+        <p className="mx-auto max-w-2xl text-xl leading-8 text-[#B8860B]">
           Comprehensive AI cost evaluation and visualization of accessibility renovations for residential properties.
         </p>
 
@@ -203,8 +203,8 @@ export default function Hero() {
             onClick={() => setInputMode('listing')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               inputMode === 'listing'
-                ? 'bg-[#4A90E2] text-white'
-                : 'bg-white text-[#2C5F8D] border border-[#6BA3E8] hover:bg-[#E8F4FD]'
+                ? 'bg-[#D2691E] text-white'
+                : 'bg-white text-[#B8860B] border border-[#D4A574] hover:bg-[#F5E6D3]'
             }`}
           >
             Listing URL
@@ -214,8 +214,8 @@ export default function Hero() {
             onClick={() => setInputMode('image')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               inputMode === 'image'
-                ? 'bg-[#4A90E2] text-white'
-                : 'bg-white text-[#2C5F8D] border border-[#6BA3E8] hover:bg-[#E8F4FD]'
+                ? 'bg-[#D2691E] text-white'
+                : 'bg-white text-[#B8860B] border border-[#D4A574] hover:bg-[#F5E6D3]'
             }`}
           >
             Image URL
@@ -226,7 +226,7 @@ export default function Hero() {
         <form onSubmit={handleAnalyze} className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-              <Search className="h-5 w-5 text-[#6BA3E8]" aria-hidden="true" />
+              <Search className="h-5 w-5 text-[#D4A574]" aria-hidden="true" />
             </div>
             <Input
               type="url"
@@ -237,7 +237,7 @@ export default function Hero() {
                   ? "Enter Realtor.ca listing URL..."
                   : "Enter property image URL..."
               }
-              className="pl-12 border-[#6BA3E8] focus:border-[#4A90E2] focus:ring-[#4A90E2]"
+              className="pl-12 border-[#D4A574] focus:border-[#D2691E] focus:ring-[#D2691E]"
               aria-label={
                 inputMode === 'listing'
                   ? "Enter a Realtor.ca listing URL for accessibility analysis"
@@ -250,7 +250,7 @@ export default function Hero() {
             type="submit"
             disabled={isLoading}
             size="lg"
-            className="bg-[#4A90E2] hover:bg-[#2C5F8D] sm:whitespace-nowrap"
+            className="bg-[#D2691E] hover:bg-[#B8860B] sm:whitespace-nowrap"
           >
             {isLoading ? "Processing Analysis..." : "Analyze Property"}
           </Button>
@@ -264,7 +264,7 @@ export default function Hero() {
         )}
 
         {/* Helper Text */}
-        <p className="text-sm text-[#2C5F8D]">
+        <p className="text-sm text-[#B8860B]">
           {inputMode === 'listing'
             ? "Submit a Realtor.ca listing URL to analyze all property images for accessibility"
             : "Submit a direct image URL from any property listing to analyze for accessibility"}
@@ -273,16 +273,16 @@ export default function Hero() {
         {/* Tips based on mode */}
         {inputMode === 'listing' && (
           <div className="mt-3 space-y-2">
-            <p className="text-xs text-[#6BA3E8]">
+            <p className="text-xs text-[#D4A574]">
               ℹ️ A browser window will open when analyzing. If you see a robot check, complete it and the scraper will continue automatically.
             </p>
-            <p className="text-xs text-[#6BA3E8]">
+            <p className="text-xs text-[#D4A574]">
               💡 Alternative: Switch to "Image URL" mode to bypass robot checks entirely.
             </p>
           </div>
         )}
         {inputMode === 'image' && (
-          <p className="text-xs text-[#6BA3E8] mt-2">
+          <p className="text-xs text-[#D4A574] mt-2">
             💡 Right-click any property photo on Realtor.ca and select "Copy Image Address"
           </p>
         )}

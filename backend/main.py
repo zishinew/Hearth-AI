@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import os
 import base64
 import asyncio
+import hashlib
+import json
 from concurrent.futures import ThreadPoolExecutor
 import google.genai as genai
 from services import audit_room, generate_renovation
@@ -21,6 +23,11 @@ app = FastAPI()
 
 # Thread pool for running synchronous code in async context
 executor = ThreadPoolExecutor(max_workers=3)
+
+# In-memory cache for generated images
+# Key: hash of (image_url + image_gen_prompt + mask_prompt + two_pass params)
+# Value: { "renovated_image": base64_string, "original_url": str }
+image_generation_cache: dict[str, dict] = {}
  
 # Add CORS middleware to allow frontend origin
 app.add_middleware(
@@ -304,6 +311,7 @@ async def generate_renovation_endpoint(request: GenerateRenovationRequest):
     """
     Generate renovation image for a specific photo when user clicks on it.
     This is called on-demand to save API costs and improve UX.
+    Includes caching to prevent duplicate generations for the same image+prompts.
 
     Args:
         image_url: URL of the original property image
@@ -313,7 +321,8 @@ async def generate_renovation_endpoint(request: GenerateRenovationRequest):
         {
             "success": true,
             "renovated_image": "data:image/jpeg;base64,...",
-            "original_url": "..."
+            "original_url": "...",
+            "cached": false  # Whether result was from cache
         }
     """
     try:
@@ -336,7 +345,33 @@ async def generate_renovation_endpoint(request: GenerateRenovationRequest):
                 "renovated_image": None
             }
 
-        print(f"Generating renovation for: {request.image_url}")
+        # Create cache key from image URL and all prompt parameters
+        cache_key_data = {
+            "image_url": request.image_url,
+            "image_gen_prompt": image_gen_prompt,
+            "mask_prompt": mask_prompt,
+            "is_two_pass": is_two_pass,
+            "clear_mask": clear_mask if is_two_pass else "",
+            "clear_prompt": clear_prompt if is_two_pass else "",
+            "build_mask": build_mask if is_two_pass else "",
+            "build_prompt": build_prompt if is_two_pass else "",
+        }
+        cache_key = hashlib.sha256(
+            json.dumps(cache_key_data, sort_keys=True).encode('utf-8')
+        ).hexdigest()
+
+        # Check cache first
+        if cache_key in image_generation_cache:
+            cached_result = image_generation_cache[cache_key]
+            print(f"Cache HIT for: {request.image_url[:50]}...")
+            return {
+                "success": True,
+                "renovated_image": cached_result["renovated_image"],
+                "original_url": cached_result["original_url"],
+                "cached": True
+            }
+
+        print(f"Cache MISS - Generating renovation for: {request.image_url}")
 
         # Generate the renovation image
         renovated_image_bytes = generate_renovation(
@@ -355,10 +390,18 @@ async def generate_renovation_endpoint(request: GenerateRenovationRequest):
             base64_encoded = base64.b64encode(renovated_image_bytes).decode('utf-8')
             renovated_image_base64 = f"data:image/jpeg;base64,{base64_encoded}"
 
+            # Store in cache
+            image_generation_cache[cache_key] = {
+                "renovated_image": renovated_image_base64,
+                "original_url": request.image_url
+            }
+            print(f"Cached result for key: {cache_key[:16]}... (cache size: {len(image_generation_cache)})")
+
             return {
                 "success": True,
                 "renovated_image": renovated_image_base64,
-                "original_url": request.image_url
+                "original_url": request.image_url,
+                "cached": False
             }
         else:
             return {

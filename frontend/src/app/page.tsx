@@ -4,7 +4,7 @@ import Footer from "@/components/landing/Footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col bg-[#F0F7FF]">
+    <main className="min-h-screen flex flex-col bg-[#FFF8E7]">
       <Hero />
       <TrustSection />
       <Footer />
