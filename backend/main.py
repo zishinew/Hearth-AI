@@ -21,7 +21,7 @@ app = FastAPI()
 
 # Thread pool for running synchronous code in async context
 executor = ThreadPoolExecutor(max_workers=3)
-
+ 
 # Add CORS middleware to allow frontend origin
 app.add_middleware(
     CORSMiddleware,
