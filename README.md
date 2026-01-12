@@ -13,7 +13,7 @@ https://github.com/user-attachments/assets/960c4e22-1094-4e73-a9dc-baeb69fc2458
 
 **DeltaHacks 26 Project** 🏠
 
-Hearth AI analyzes real estate images to identify accessibility barriers and generates AI-powered renovation visualizations with cost estimates. Whether you're a property buyer, seller, or accessibility advocate, AccessiVision helps you visualize how any property can be made more accessible.
+Hearth AI analyzes real estate images to identify accessibility barriers and generates AI-powered renovation visualizations with cost estimates. Whether you're a property buyer, seller, or accessibility advocate, **hearth** helps you visualize how any property can be made more accessible.
 
 Meet Jo! Jo is 60. He's getting a bit old, and wants to downsize and buy a nice house for him and his wife to reside in for the foreseeable future. But again, Jo's a bit old, so he's starting to experience some physical challenges.
 
