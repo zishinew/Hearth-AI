@@ -19,7 +19,7 @@ Meet Jo! Jo is 60. He's getting a bit old, and wants to downsize and buy a nice 
 
 Jo, like many other people his age, is trying his best not to let his age affect what he can or cannot do. He wants to be able to move around his house freely, while also maintaining enough space in his house to have personal space when needed.
 
-We built hearth. to analyze listings on Realtor.ca to detect flaws in accessibility throughout and around the house. First, we (legally) scrape the data from Realtor.ca, then use Google Gemini API to identify accessibility barriers and create renovation visualizations and cost estimates.
+We built hearth. to analyze listings on Realtor.ca to detect flaws in accessibility throughout and around the house. First, we scrape the data from Realtor.ca, then use Google Gemini API to identify accessibility barriers and create renovation visualizations and cost estimates.
 
 Users simply enter a Realtor.ca listing URL and wait a few minutes for the visualization of the potential accessibility renovations, as well as the thought process and costs behind them.
 
