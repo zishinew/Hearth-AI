@@ -1,4 +1,4 @@
-# AccessiVision
+# Hearth
 
 > AI-Powered Real Estate Accessibility Visualizer
 
