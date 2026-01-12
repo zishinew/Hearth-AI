@@ -1,6 +1,7 @@
 # Hearth
 <img width="2880" height="1576" alt="Screenshot 2026-01-11 at 09-36-39 hearth  - Accessibility Analysis" src="https://github.com/user-attachments/assets/338c2d19-4caf-44a8-9a1f-0aec1c440ee8" />
-![EBA875AA-BF5E-4CD5-95B3-5D388F401756_1_102_o](https://github.com/user-attachments/assets/14172449-152b-40f6-8ef5-e5a289e15983)
+
+![Adobe Express - copy_47325DA3-D14F-4E1F-8DB6-86D7691DB301](https://github.com/user-attachments/assets/1df3b99f-472c-4c4a-957e-c130def9d93c)
 
 > AI-Powered Real Estate Accessibility Visualizer
 
