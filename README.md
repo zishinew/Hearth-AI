@@ -54,8 +54,8 @@ Hearth AI analyzes real estate images to identify accessibility barriers and gen
 ### Backend Setup
 
 1. **Navigate to the backend directory:**
-   cd deltahacks26/backend
-   uvicorn main:app --reload
+   ```cd deltahacks26/backend```
+   ```uvicorn main:app --reload```
 3. **Navigate to the frontend directory:**
-   cd deltahacks26/backend
-   npm run dev
+   ```cd deltahacks26/backend```
+   ```npm run dev```
