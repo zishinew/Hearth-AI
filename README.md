@@ -4,11 +4,11 @@
 
 **DeltaHacks 26 Project** 🏠
 
-AccessiVision analyzes real estate images to identify accessibility barriers and generates AI-powered renovation visualizations with cost estimates. Whether you're a property buyer, seller, or accessibility advocate, AccessiVision helps you visualize how any property can be made more accessible.
+Hearth AI analyzes real estate images to identify accessibility barriers and generates AI-powered renovation visualizations with cost estimates. Whether you're a property buyer, seller, or accessibility advocate, AccessiVision helps you visualize how any property can be made more accessible.
 
 ## ✨ Features
 
-- **🔍 AI-Powered Analysis**: Uses Gemini 1.5 Pro to detect accessibility barriers in property images
+- **🔍 AI-Powered Analysis**: Uses Gemini 3 Flash to detect accessibility barriers in property images
 - **🎨 Visual Renovation Preview**: Generates realistic before/after images using AI image generation
 - **💰 Cost Estimation**: Provides detailed cost estimates for accessibility renovations
 - **🏘️ Full Property Analysis**: Scrapes Realtor.ca listings to analyze entire properties
